@@ -1,6 +1,7 @@
 package com.andimuhammadraihansyamsu607062330113.mybookassess3.network
 
-import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.Hewan
+import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.Buku
+import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.BukuResponse
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.OpStatus
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -13,8 +14,9 @@ import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Query
 
-private const val BASE_URL = "https://gh.d3ifcool.org/"
+private const val BASE_URL = "http://103.175.219.150:3006/"
 
 private val moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
@@ -25,11 +27,12 @@ private val retrofit = Retrofit.Builder()
     .baseUrl(BASE_URL)
     .build()
 
-interface HewanApiService {
-    @GET("hewan.php")
-    suspend fun getHewan(
-        @Header("Authorization") userId: String
-    ): List<Hewan>
+interface BukuApiService {
+    @GET("buku")
+    suspend fun getBukuPublic(
+        @Query("userId") userId: String
+    ): BukuResponse
+
 
     @Multipart
     @POST("hewan.php")
@@ -41,13 +44,9 @@ interface HewanApiService {
     ): OpStatus
 }
 
-object HewanApi {
-    val service: HewanApiService by lazy {
-        retrofit.create(HewanApiService::class.java)
-    }
-
-    fun getHewanUrl(imageId: String): String {
-        return "${BASE_URL}image.php?id=$imageId"
+object BukuApi {
+    val service: BukuApiService by lazy {
+        retrofit.create(BukuApiService::class.java)
     }
 }
 

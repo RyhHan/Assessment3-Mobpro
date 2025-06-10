@@ -12,16 +12,17 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
@@ -44,6 +45,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -66,10 +69,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.BuildConfig
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.R
-import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.Hewan
+import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.Buku
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.User
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.network.ApiStatus
-import com.andimuhammadraihansyamsu607062330113.mybookassess3.network.HewanApi
+import com.andimuhammadraihansyamsu607062330113.mybookassess3.network.BukuApi
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.network.UserDataStore
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.ui.theme.MyBookAssess2Theme
 import com.canhub.cropper.CropImageContract
@@ -174,16 +177,16 @@ fun MainScreen() {
 }
 
 @Composable
-fun ScreenContent(viewModel: MainViewModel, userId:String, modifier: Modifier = Modifier) {
+fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier = Modifier) {
     val data by viewModel.data
     val status by viewModel.status.collectAsState()
 
     LaunchedEffect(userId) {
-        viewModel.retrieveData(userId)
+        viewModel.retrieveData("example@gmail.com")
     }
 
     when (status) {
-        ApiStatus.LOADING ->  {
+        ApiStatus.LOADING -> {
             Box(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -197,7 +200,17 @@ fun ScreenContent(viewModel: MainViewModel, userId:String, modifier: Modifier = 
                 columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                items(data){ ListItem(hewan = it) }
+                Log.d("MainScreen", "Data size: $data")
+                items(data.size) { index ->
+                    val buku = data[index]
+                    ListItem(buku) {
+                        Toast.makeText(
+                            LocalContext.current,
+                            "Selected: ${buku.judul}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
             }
         }
         ApiStatus.FAILED -> {
@@ -208,7 +221,7 @@ fun ScreenContent(viewModel: MainViewModel, userId:String, modifier: Modifier = 
             ) {
                 Text(text = stringResource(id = R.string.error))
                 Button(
-                    onClick = {viewModel.retrieveData(userId)},
+                    onClick = { viewModel.retrieveData(userId) },
                     modifier = Modifier.padding(top = 16.dp),
                     contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
                 ) {
@@ -217,45 +230,83 @@ fun ScreenContent(viewModel: MainViewModel, userId:String, modifier: Modifier = 
             }
         }
     }
-
 }
 
 @Composable
-fun ListItem(hewan : Hewan) {
-    Box (
-        modifier = Modifier.padding(4.dp).border(1.dp,Color.Gray),
-        contentAlignment = Alignment.BottomCenter
+fun ListItem(buku: Buku, onClick: @Composable () -> Unit) {
+    // Warna berdasarkan status
+    val statusColor = when (buku.status) {
+        "belum baca" -> Color(0xFFE57373)  // Merah terang untuk belum baca
+        "sedang baca" -> Color(0xFFFFEB3B)  // Kuning untuk sedang baca
+        "sudah baca" -> Color(0xFF81C784)  // Hijau untuk sudah baca
+        else -> Color.Gray // Default jika status tidak sesuai
+    }
+
+    // Shadow untuk tampilan yang lebih modern
+    val shadowColor = if (buku.status == "sudah baca") Color.Gray else Color.Black.copy(alpha = 0.2f)
+
+    Box(
+        modifier = Modifier
+            .padding(8.dp)
+            .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium)  // Rounded corners
+            .shadow(8.dp, shape = MaterialTheme.shapes.medium, clip = false)
+//            .clickable(onClick = onClick)  // Ketika item di-klik
+            .padding(8.dp)  // Padding di dalam item
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(HewanApi.getHewanUrl(hewan.imageId))
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(R.string.gambar,hewan.nama),
-            contentScale = ContentScale.Crop,
-            placeholder = painterResource(R.drawable.loading_img),
-            error = painterResource(R.drawable.baseline_broken_image_24),
-            modifier = Modifier.fillMaxWidth().padding(4.dp)
-        )
-        Column (
-            modifier = Modifier.fillMaxWidth().padding(4.dp)
-                .background(Color(red = 0f, green = 0f, blue = 0f, alpha = 0.5f))
-                .padding(4.dp)
-        ){
-            Text(
-                text = hewan.nama,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, shape = MaterialTheme.shapes.medium) // Rounded corners untuk item
+                .clip(MaterialTheme.shapes.medium)  // Menambahkan rounded corners pada setiap item
+        ) {
+            // Gambar cover buku dengan efek blur (grayscale)
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(buku.coverUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Cover buku: ${buku.judul}",
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(R.drawable.loading_img),
+                error = painterResource(R.drawable.baseline_broken_image_24),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(MaterialTheme.shapes.medium)  // Rounded corners pada gambar
             )
-            Text(
-                text = hewan.namaLatin,
-                fontStyle = FontStyle.Italic,
-                fontSize = 14.sp,
-                color = Color.White
-            )
+
+            // Judul dan Status
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0f, 0f, 0f, 0.5f))
+                    .padding(8.dp)
+                    .clip(MaterialTheme.shapes.medium)  // Rounded corners pada teks container
+            ) {
+                // Judul buku
+                Text(
+                    text = buku.judul,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                // Status dengan warna khusus dan sedikit padding
+                Text(
+                    text = buku.status,
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 14.sp,
+                    color = Color.White,
+                    modifier = Modifier
+                        .background(statusColor, shape = MaterialTheme.shapes.small)  // Rounded corners di status
+                        .padding(6.dp)
+                        .fillMaxWidth()
+                )
+            }
         }
     }
 }
+
 
 private suspend fun signIn(context : Context, dataStore: UserDataStore) {
     val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
