@@ -18,13 +18,13 @@ import java.io.ByteArrayOutputStream
 
 class MainViewModel : ViewModel() {
 
-    var data = mutableStateOf<List<Buku>>(emptyList()) // Store books
+    var data = mutableStateOf<List<Buku>>(emptyList())
         private set
 
-    var status = MutableStateFlow(ApiStatus.LOADING) // Store API request status
+    var status = MutableStateFlow(ApiStatus.LOADING)
         private set
 
-    var errorMessage = mutableStateOf<String?>(null) // Store error message
+    var errorMessage = mutableStateOf<String?>(null)
         private set
 
     // Function to fetch data from API
@@ -48,40 +48,73 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    // Function to save new data (example: animal data)
-    fun saveData(userId: String, nama: String, namaLatin: String, bitmap: Bitmap) {
+    fun addNewBuku(
+        judul: String,
+        userId: String,
+        penulis: String,
+        tahunTerbit: String,
+        description: String,
+        coverImage: Bitmap?
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val result = BukuApi.service.postHewan(
-                    userId,
-                    nama.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    namaLatin.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    bitmap.toMultipartBody()
+                val coverImagePart = coverImage!!.toMultipartBody()  // Convert Bitmap to Multipart
+                val judulPart = judul.toRequestBody("text/plain".toMediaTypeOrNull())
+                val penulisPart = penulis.toRequestBody("text/plain".toMediaTypeOrNull())
+                val tahunTerbitPart = tahunTerbit.toRequestBody("text/plain".toMediaTypeOrNull())
+                val descriptionPart = description.toRequestBody("text/plain".toMediaTypeOrNull())
+                val userIdPart = userId.toRequestBody("text/plain".toMediaTypeOrNull())
+
+                val response = BukuApi.service.addBuku(
+                    coverImagePart,
+                    judulPart,
+                    penulisPart,
+                    tahunTerbitPart,
+                    descriptionPart,
+                    userIdPart
                 )
 
-                if (result.status == "success")
-                    retrieveData(userId) // Refresh the list
-                else
-                    throw Exception(result.message)
+                if (response.message == "Buku created successfully") {
+                    retrieveData(userId)
+
+                } else {
+                    throw Exception("Failed to add book: ${response.message}")
+                }
+
             } catch (e: Exception) {
+                errorMessage.value = "Error1: ${e.message}"
                 Log.d("MainViewModel", "Failure: ${e.message}")
-                errorMessage.value = "Error: ${e.message}"
             }
         }
     }
 
-    // Extension function to convert bitmap to multipart
+    fun deleteBook(bookId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = BukuApi.service.deleteBuku(bookId)
+
+                if (response.message == "Buku deleted successfully") {
+                    Log.d("MainViewModel", "Book deleted successfully")
+                    data.value = data.value.filter { it.id != bookId }
+                } else {
+                    errorMessage.value = "Failed to delete book"
+                }
+            } catch (e: Exception) {
+                errorMessage.value = "Error: ${e.message}"
+                Log.d("MainViewModel", "Failure: ${e.message}")
+            }
+        }
+    }
+
     private fun Bitmap.toMultipartBody(): MultipartBody.Part {
         val stream = ByteArrayOutputStream()
         compress(Bitmap.CompressFormat.JPEG, 80, stream)
         val byteArray = stream.toByteArray()
-        val requestBody = byteArray.toRequestBody(
-            "image/jpg".toMediaTypeOrNull(), 0, byteArray.size
-        )
-        return MultipartBody.Part.createFormData("image", "image.jpg", requestBody)
+        val requestBody = byteArray.toRequestBody("image/jpg".toMediaTypeOrNull(), 0, byteArray.size)
+        return MultipartBody.Part.createFormData("coverUrl", "cover.jpg", requestBody)  // Gunakan "coverUrl" untuk key sesuai dengan nama parameter di backend
     }
 
-    // Clear error message
+
     fun clearMessage() {
         errorMessage.value = null
     }

@@ -85,12 +85,16 @@ fun MainScreen() {
     val errorMessage by viewModel.errorMessage
 
     var showDialog by remember { mutableStateOf(false) }
+    var showProfileDialog by remember { mutableStateOf(false) }
     var selectedBuku by remember { mutableStateOf<Buku?>(null) }
 
     val openBukuDialog = { buku: Buku ->
         selectedBuku = buku
         showDialog = true
     }
+
+    var showAddBukuDialog by remember { mutableStateOf(false) }
+    val openAddBukuDialog = { showAddBukuDialog = true }
 
     Scaffold(
         topBar = {
@@ -105,7 +109,7 @@ fun MainScreen() {
                         if (user.email.isEmpty()) {
                             CoroutineScope(Dispatchers.IO).launch { signIn(context, dataStore) }
                         } else {
-                            showDialog = true
+                            showProfileDialog = true
                         }
                     }) {
                         Icon(
@@ -118,9 +122,7 @@ fun MainScreen() {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-//                 fungsi tambah buku nanti disini
-            }) {
+            FloatingActionButton(onClick = openAddBukuDialog) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(id = R.string.tambah_hewan))
             }
         }
@@ -133,22 +135,33 @@ fun MainScreen() {
                     buku = buku,
                     onDismissRequest = { showDialog = false },
                     onEditClick = {
-                        showDialog = false
+
                     },
                     onDeleteClick = {
+                        viewModel.deleteBook(buku.id)
                         showDialog = false
                     }
                 )
             }
         }
 
-        if (showDialog) {
+        if (showProfileDialog) {
             ProfilDialog(
                 user = user,
-                onDismissRequest = { showDialog = false }) {
+                onDismissRequest = { showProfileDialog = false }) {
                 CoroutineScope(Dispatchers.IO).launch { signOut(context, dataStore) }
-                showDialog = false
+                showProfileDialog = false
             }
+        }
+
+        if (showAddBukuDialog) {
+            AddBukuDialog(
+                onDismissRequest = { showAddBukuDialog = false },
+                onSave = { judul, penulis, tahunTerbit, description, selectedImage ->
+                    viewModel.addNewBuku(judul, user.email, penulis, tahunTerbit, description, selectedImage)
+                    showAddBukuDialog = false
+                }
+            )
         }
 
         if (errorMessage != null) {
@@ -164,7 +177,7 @@ fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier =
     val status by viewModel.status.collectAsState()
 
     LaunchedEffect(userId) {
-        viewModel.retrieveData("example@gmail.com")
+        viewModel.retrieveData("muhraihan23425@gmail.com")
     }
 
     when (status) {
