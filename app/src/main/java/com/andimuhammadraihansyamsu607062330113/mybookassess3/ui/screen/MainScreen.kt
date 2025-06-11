@@ -1,17 +1,10 @@
 package com.andimuhammadraihansyamsu607062330113.mybookassess3.ui.screen
 
-import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
-import android.os.Build
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,13 +65,8 @@ import com.andimuhammadraihansyamsu607062330113.mybookassess3.R
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.Buku
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.model.User
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.network.ApiStatus
-import com.andimuhammadraihansyamsu607062330113.mybookassess3.network.BukuApi
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.network.UserDataStore
 import com.andimuhammadraihansyamsu607062330113.mybookassess3.ui.theme.MyBookAssess2Theme
-import com.canhub.cropper.CropImageContract
-import com.canhub.cropper.CropImageContractOptions
-import com.canhub.cropper.CropImageOptions
-import com.canhub.cropper.CropImageView
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -97,20 +85,17 @@ fun MainScreen() {
     val errorMessage by viewModel.errorMessage
 
     var showDialog by remember { mutableStateOf(false) }
-    var showHewanDialog by remember { mutableStateOf(false) }
+    var selectedBuku by remember { mutableStateOf<Buku?>(null) }
 
-    var bitmap: Bitmap? by remember { mutableStateOf(null) }
-    var launcher = rememberLauncherForActivityResult(CropImageContract()) {
-        bitmap = getCropperImage(context.contentResolver,it)
-        if (bitmap != null) showHewanDialog = true
+    val openBukuDialog = { buku: Buku ->
+        selectedBuku = buku
+        showDialog = true
     }
 
-    Scaffold (
+    Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(text = stringResource(id = R.string.app_name))
-                },
+                title = { Text(text = stringResource(id = R.string.app_name)) },
                 colors = TopAppBarDefaults.mediumTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -119,8 +104,7 @@ fun MainScreen() {
                     IconButton(onClick = {
                         if (user.email.isEmpty()) {
                             CoroutineScope(Dispatchers.IO).launch { signIn(context, dataStore) }
-                        }
-                        else {
+                        } else {
                             showDialog = true
                         }
                     }) {
@@ -135,23 +119,28 @@ fun MainScreen() {
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                val options = CropImageContractOptions(
-                    null, CropImageOptions(
-                        imageSourceIncludeGallery = false,
-                        imageSourceIncludeCamera = true,
-                        fixAspectRatio = true
-                    )
-                )
-                launcher.launch(options)
+//                 fungsi tambah buku nanti disini
             }) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(id = R.string.tambah_hewan),
-                )
+                Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(id = R.string.tambah_hewan))
             }
         }
     ) { innerPadding ->
-        ScreenContent(viewModel,user.email,modifier = Modifier.padding(innerPadding))
+        ScreenContent(viewModel, user.email, modifier = Modifier.padding(innerPadding), openBukuDialog = openBukuDialog)
+
+        selectedBuku?.let { buku ->
+            if (showDialog) {
+                BukuDialog(
+                    buku = buku,
+                    onDismissRequest = { showDialog = false },
+                    onEditClick = {
+                        showDialog = false
+                    },
+                    onDeleteClick = {
+                        showDialog = false
+                    }
+                )
+            }
+        }
 
         if (showDialog) {
             ProfilDialog(
@@ -161,23 +150,16 @@ fun MainScreen() {
                 showDialog = false
             }
         }
-        if (showHewanDialog ) {
-            HewanDialog(
-                bitmap = bitmap,
-                onDismissRequest = { showHewanDialog = false }) { nama, namaLatin ->
-                viewModel.saveData(user.email, nama, namaLatin, bitmap!!)
-                showHewanDialog = false
-            }
-        }
+
         if (errorMessage != null) {
-            Toast.makeText(context,errorMessage, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
             viewModel.clearMessage()
         }
     }
 }
 
 @Composable
-fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier = Modifier) {
+fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier = Modifier, openBukuDialog: (Buku) -> Unit) {
     val data by viewModel.data
     val status by viewModel.status.collectAsState()
 
@@ -187,10 +169,7 @@ fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier =
 
     when (status) {
         ApiStatus.LOADING -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
@@ -200,15 +179,10 @@ fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier =
                 columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                Log.d("MainScreen", "Data size: $data")
                 items(data.size) { index ->
                     val buku = data[index]
                     ListItem(buku) {
-                        Toast.makeText(
-                            LocalContext.current,
-                            "Selected: ${buku.judul}",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        openBukuDialog(buku)
                     }
                 }
             }
@@ -233,33 +207,28 @@ fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier =
 }
 
 @Composable
-fun ListItem(buku: Buku, onClick: @Composable () -> Unit) {
-    // Warna berdasarkan status
+fun ListItem(buku: Buku, onClick: () -> Unit) {
     val statusColor = when (buku.status) {
-        "belum baca" -> Color(0xFFE57373)  // Merah terang untuk belum baca
-        "sedang baca" -> Color(0xFFFFEB3B)  // Kuning untuk sedang baca
-        "sudah baca" -> Color(0xFF81C784)  // Hijau untuk sudah baca
-        else -> Color.Gray // Default jika status tidak sesuai
+        "belum baca" -> Color(0xFFE57373)
+        "sedang baca" -> Color(0xFFFFEB3B)
+        "sudah baca" -> Color(0xFF81C784)
+        else -> Color.Gray
     }
-
-    // Shadow untuk tampilan yang lebih modern
-    val shadowColor = if (buku.status == "sudah baca") Color.Gray else Color.Black.copy(alpha = 0.2f)
 
     Box(
         modifier = Modifier
             .padding(8.dp)
-            .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium)  // Rounded corners
+            .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium)
             .shadow(8.dp, shape = MaterialTheme.shapes.medium, clip = false)
-//            .clickable(onClick = onClick)  // Ketika item di-klik
-            .padding(8.dp)  // Padding di dalam item
+            .clickable(onClick = onClick)
+            .padding(8.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White, shape = MaterialTheme.shapes.medium) // Rounded corners untuk item
-                .clip(MaterialTheme.shapes.medium)  // Menambahkan rounded corners pada setiap item
+                .background(Color.White, shape = MaterialTheme.shapes.medium)
+                .clip(MaterialTheme.shapes.medium)
         ) {
-            // Gambar cover buku dengan efek blur (grayscale)
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(buku.coverUrl)
@@ -272,18 +241,16 @@ fun ListItem(buku: Buku, onClick: @Composable () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
-                    .clip(MaterialTheme.shapes.medium)  // Rounded corners pada gambar
+                    .clip(MaterialTheme.shapes.medium)
             )
 
-            // Judul dan Status
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0f, 0f, 0f, 0.5f))
                     .padding(8.dp)
-                    .clip(MaterialTheme.shapes.medium)  // Rounded corners pada teks container
+                    .clip(MaterialTheme.shapes.medium)
             ) {
-                // Judul buku
                 Text(
                     text = buku.judul,
                     fontWeight = FontWeight.Bold,
@@ -291,14 +258,13 @@ fun ListItem(buku: Buku, onClick: @Composable () -> Unit) {
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
-                // Status dengan warna khusus dan sedikit padding
                 Text(
                     text = buku.status,
                     fontStyle = FontStyle.Italic,
                     fontSize = 14.sp,
                     color = Color.White,
                     modifier = Modifier
-                        .background(statusColor, shape = MaterialTheme.shapes.small)  // Rounded corners di status
+                        .background(statusColor, shape = MaterialTheme.shapes.small)
                         .padding(6.dp)
                         .fillMaxWidth()
                 )
@@ -306,7 +272,6 @@ fun ListItem(buku: Buku, onClick: @Composable () -> Unit) {
         }
     }
 }
-
 
 private suspend fun signIn(context : Context, dataStore: UserDataStore) {
     val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()
@@ -353,25 +318,6 @@ private suspend fun signOut(context: Context,dataStore: UserDataStore) {
         dataStore.saveData(User())
     } catch (e: ClearCredentialException) {
         Log.e("SIGN-IN", "Error: ${e.errorMessage}")
-    }
-}
-
-private fun getCropperImage(
-    resolver: ContentResolver,
-    result: CropImageView.CropResult
-) : Bitmap? {
-    if (!result.isSuccessful) {
-        Log.e("IMAGE", "Error: ${result.error}")
-        return null
-    }
-    val uri = result.uriContent ?: return null
-
-    return if(Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-        @Suppress("DEPRECATION")
-        MediaStore.Images.Media.getBitmap(resolver,uri)
-    } else {
-        val source = ImageDecoder.createSource(resolver, uri)
-        ImageDecoder.decodeBitmap(source)
     }
 }
 
