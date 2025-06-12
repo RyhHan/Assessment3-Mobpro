@@ -14,4 +14,19 @@
     <string name="pesanHapus">Apakah Anda yakin ingin menghapus item ini?</string>
     <string name="simpan">Simpan</string>
     <string name="hapus">Hapus</string>
+
+    <!-- AddBukuDialog Strings -->
+    <string name="tambah_buku_baru">Tambah Buku Baru</string>
+    <string name="judul_buku">Judul Buku</string>
+    <string name="penulis">Penulis</string>
+    <string name="tahun_terbit">Tahun Terbit</string>
+    <string name="deskripsi_buku">Deskripsi Buku</string>
+    <string name="status_buku">Status Buku</string>
+    <string name="belum_baca">Belum Baca</string>
+    <string name="sedang_baca">Sedang Baca</string>
+    <string name="sudah_baca">Sudah Baca</string>
+    <string name="pilih_gambar">Masukkan Gambar</string>
+    <string name="pilih_gambar_galeri">Galeri</string>
+    <string name="ambil_foto_kamera">Kamera</string>
+    <string name="pesan_error">Semua kolom harus diisi dengan benar</string>
 </resources>

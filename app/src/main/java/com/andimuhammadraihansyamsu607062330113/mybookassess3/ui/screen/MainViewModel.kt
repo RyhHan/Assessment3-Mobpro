@@ -27,7 +27,6 @@ class MainViewModel : ViewModel() {
     var errorMessage = mutableStateOf<String?>(null)
         private set
 
-    // Function to fetch data from API
     fun retrieveData(userId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             status.value = ApiStatus.LOADING
@@ -54,6 +53,7 @@ class MainViewModel : ViewModel() {
         penulis: String,
         tahunTerbit: String,
         description: String,
+        status: String,
         coverImage: Bitmap?
     ) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -63,6 +63,7 @@ class MainViewModel : ViewModel() {
                 val penulisPart = penulis.toRequestBody("text/plain".toMediaTypeOrNull())
                 val tahunTerbitPart = tahunTerbit.toRequestBody("text/plain".toMediaTypeOrNull())
                 val descriptionPart = description.toRequestBody("text/plain".toMediaTypeOrNull())
+                val statusPart = status.toRequestBody("text/plain".toMediaTypeOrNull())
                 val userIdPart = userId.toRequestBody("text/plain".toMediaTypeOrNull())
 
                 val response = BukuApi.service.addBuku(
@@ -71,6 +72,7 @@ class MainViewModel : ViewModel() {
                     penulisPart,
                     tahunTerbitPart,
                     descriptionPart,
+                    statusPart,
                     userIdPart
                 )
 
@@ -87,6 +89,45 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
+    fun updateBuku(
+        id: Int,
+        judul: String,
+        penulis: String,
+        tahunTerbit: String,
+        description: String,
+        status: String,
+        coverImage: Bitmap?,
+        onComplete: () -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = BukuApi.service.updateBuku(
+                    id,
+                    judul.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    penulis.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    tahunTerbit.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    description.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    status.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    coverImage?.toMultipartBody()
+                )
+
+                // Log response for debugging
+                Log.d("UpdateBuku", "Response: $response")
+
+                if (response.message == "Buku updated successfully") {
+                    onComplete()  // Callback to retrieve data
+                } else {
+                    errorMessage.value = "Failed to update book"
+                }
+            } catch (e: Exception) {
+                errorMessage.value = "Error updating book: ${e.message}"
+                Log.e("UpdateBuku", "Error: ${e.message}")
+            }
+        }
+    }
+
+
 
     fun deleteBook(bookId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -106,13 +147,15 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    // Convert Bitmap to MultipartBody.Part
     private fun Bitmap.toMultipartBody(): MultipartBody.Part {
         val stream = ByteArrayOutputStream()
         compress(Bitmap.CompressFormat.JPEG, 80, stream)
         val byteArray = stream.toByteArray()
         val requestBody = byteArray.toRequestBody("image/jpg".toMediaTypeOrNull(), 0, byteArray.size)
-        return MultipartBody.Part.createFormData("coverUrl", "cover.jpg", requestBody)  // Gunakan "coverUrl" untuk key sesuai dengan nama parameter di backend
+        return MultipartBody.Part.createFormData("coverUrl", "cover.jpg", requestBody)
     }
+
 
 
     fun clearMessage() {

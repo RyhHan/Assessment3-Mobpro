@@ -90,9 +90,15 @@ fun MainScreen() {
     var showProfileDialog by remember { mutableStateOf(false) }
     var selectedBuku by remember { mutableStateOf<Buku?>(null) }
 
+    var showEditBukuDialog by remember { mutableStateOf(false) }
+
     val openBukuDialog = { buku: Buku ->
         selectedBuku = buku
         showDialog = true
+    }
+
+    val openEditBukuDialog = {
+        showEditBukuDialog = true
     }
 
     var showAddBukuDialog by remember { mutableStateOf(false) }
@@ -137,7 +143,7 @@ fun MainScreen() {
                     buku = buku,
                     onDismissRequest = { showDialog = false },
                     onEditClick = {
-
+                        openEditBukuDialog()
                     },
                     onDeleteClick = {
                         viewModel.deleteBook(buku.id)
@@ -159,11 +165,28 @@ fun MainScreen() {
         if (showAddBukuDialog) {
             AddBukuDialog(
                 onDismissRequest = { showAddBukuDialog = false },
-                onSave = { judul, penulis, tahunTerbit, description, selectedImage ->
-                    viewModel.addNewBuku(judul, user.email, penulis, tahunTerbit, description, selectedImage)
+                onSave = { judul, penulis, tahunTerbit, description,status, selectedImage ->
+                    viewModel.addNewBuku(judul, user.email, penulis, tahunTerbit, description,status, selectedImage)
                     showAddBukuDialog = false
                 }
             )
+        }
+
+        if (showEditBukuDialog) {
+            selectedBuku?.let { buku ->
+                EditBukuDialog(
+                    buku = buku,
+                    onDismissRequest = { showEditBukuDialog = false },
+                    onSave = { id, judul, penulis, tahunTerbit, description, status, selectedImage ->
+                        viewModel.updateBuku(id, judul, penulis, tahunTerbit, description, status, selectedImage) {
+                            viewModel.retrieveData(user.email)
+                            selectedBuku = Buku(id, user.email,judul, penulis, tahunTerbit.toInt(), description, status, buku.coverUrl, "", "")
+                        }
+
+                        showEditBukuDialog = false
+                    }
+                )
+            }
         }
 
         if (errorMessage != null) {

@@ -2,7 +2,6 @@ package com.andimuhammadraihansyamsu607062330113.mybookassess3.model
 
 import com.squareup.moshi.Json
 
-// Model untuk Buku
 data class Buku(
     val id: Int,
     val userId: String,

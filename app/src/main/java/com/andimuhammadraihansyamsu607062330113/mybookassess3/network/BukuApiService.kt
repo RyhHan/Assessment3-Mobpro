@@ -12,6 +12,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -41,12 +42,24 @@ interface BukuApiService {
         @Part("penulis") penulis: RequestBody,
         @Part("tahunTerbit") tahunTerbit: RequestBody,
         @Part("description") description: RequestBody,
+        @Part("status") status: RequestBody,
         @Part("userId") userId: RequestBody
+    ): OpStatus
+
+    @Multipart
+    @PUT("buku/{id}")
+    suspend fun updateBuku(
+        @Path("id") id: Int,
+        @Part("judul") judul: RequestBody,
+        @Part("penulis") penulis: RequestBody,
+        @Part("tahunTerbit") tahunTerbit: RequestBody,
+        @Part("description") description: RequestBody,
+        @Part("status") status: RequestBody,
+        @Part coverImage: MultipartBody.Part? = null
     ): OpStatus
 
     @DELETE("buku/{id}")
     suspend fun deleteBuku(@Path("id") id: Int): OpStatus
-
 }
 
 object BukuApi {
