@@ -2,6 +2,8 @@ package com.andimuhammadraihansyamsu607062330113.mybookassess3.ui.screen
 
 import android.content.Context
 import android.content.res.Configuration
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -175,49 +177,101 @@ fun MainScreen() {
 fun ScreenContent(viewModel: MainViewModel, userId: String, modifier: Modifier = Modifier, openBukuDialog: (Buku) -> Unit) {
     val data by viewModel.data
     val status by viewModel.status.collectAsState()
+    val context = LocalContext.current
+    var isConnected by remember { mutableStateOf(checkInternetConnection(context)) }
 
-    LaunchedEffect(userId) {
-        viewModel.retrieveData("muhraihan23425@gmail.com")
-    }
-
-    when (status) {
-        ApiStatus.LOADING -> {
-            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    LaunchedEffect(userId, isConnected) {
+        if (isConnected) {
+            if (userId.isNotEmpty()) {
+                viewModel.retrieveData(userId)
             }
         }
-        ApiStatus.SUCCESS -> {
-            LazyVerticalGrid(
-                modifier = modifier.fillMaxSize().padding(4.dp),
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(bottom = 80.dp)
+    }
+
+    if (!isConnected) {
+        Column(
+            modifier = modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = "No Internet Connection", color = Color.Red)
+
+            Button(
+                onClick = {
+                    isConnected = checkInternetConnection(context)
+                    if (isConnected) {
+                        Log.d("Internet", "berhasil connect internet.")
+                    } else {
+                        Log.d("Internet", "gagal connect internet.")
+                    }
+                },
+                modifier = Modifier.padding(top = 16.dp)
             ) {
-                items(data.size) { index ->
-                    val buku = data[index]
-                    ListItem(buku) {
-                        openBukuDialog(buku)
+                Text("Reconnect")
+            }
+        }
+    } else if (userId.isEmpty()) {
+        Column(
+            modifier = modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Button(onClick = {
+                CoroutineScope(Dispatchers.IO).launch { signIn(context, UserDataStore(context)) }
+            }) {
+                Text(text = "sign in untuk melihat buku")
+            }
+        }
+    } else {
+        when (status) {
+            ApiStatus.LOADING -> {
+                Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            ApiStatus.SUCCESS -> {
+                LazyVerticalGrid(
+                    modifier = modifier.fillMaxSize().padding(4.dp),
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    items(data.size) { index ->
+                        val buku = data[index]
+                        ListItem(buku) {
+                            openBukuDialog(buku)
+                        }
                     }
                 }
             }
-        }
-        ApiStatus.FAILED -> {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(text = stringResource(id = R.string.error))
-                Button(
-                    onClick = { viewModel.retrieveData(userId) },
-                    modifier = Modifier.padding(top = 16.dp),
-                    contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+            ApiStatus.FAILED -> {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = stringResource(id = R.string.try_again))
+                    Text(text = stringResource(id = R.string.error))
+                    Button(
+                        onClick = { viewModel.retrieveData(userId) },
+                        modifier = Modifier.padding(top = 16.dp),
+                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+                    ) {
+                        Text(text = stringResource(id = R.string.try_again))
+                    }
                 }
             }
         }
     }
 }
+
+fun checkInternetConnection(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val networkCapabilities = connectivityManager.activeNetwork?.let {
+        connectivityManager.getNetworkCapabilities(it)
+    }
+
+    return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+}
+
 
 @Composable
 fun ListItem(buku: Buku, onClick: () -> Unit) {
