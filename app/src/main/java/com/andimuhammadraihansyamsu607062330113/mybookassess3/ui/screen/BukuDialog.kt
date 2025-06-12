@@ -9,6 +9,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -29,6 +33,42 @@ fun BukuDialog(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
+    if (showConfirmDialog) {
+        // Menampilkan dialog konfirmasi untuk menghapus buku
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = {
+                Text(text = "Konfirmasi Penghapusan")
+            },
+            text = {
+                Text(text = "Apakah Anda yakin ingin menghapus buku ini?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        // Menghapus buku setelah konfirmasi
+                        onDeleteClick()
+                        showConfirmDialog = false
+                    }
+                ) {
+                    Text("Ya")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        showConfirmDialog = false
+                    }
+                ) {
+                    Text("Tidak")
+                }
+            }
+        )
+    }
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = {
@@ -40,7 +80,7 @@ fun BukuDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
+                    model = ImageRequest.Builder(context)
                         .data(buku.coverUrl)
                         .crossfade(true)
                         .build(),
@@ -51,19 +91,18 @@ fun BukuDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
-                        .clip(MaterialTheme.shapes.medium)  // Rounded corners pada gambar
+                        .clip(MaterialTheme.shapes.medium)
                 )
                 Text(text = "Judul: ${buku.judul}")
                 Text(text = "Penulis: ${buku.penulis}")
                 Text(text = "Tahun Terbit: ${buku.tahunTerbit}")
                 Text(text = "Deskripsi: ${buku.description}")
-                // Status yang ditampilkan dengan warna
                 Text(
                     text = "Status: ${buku.status}",
                     color = when (buku.status) {
-                        "belum baca" -> Color(0xFFE57373)  // Merah terang
-                        "sedang baca" -> Color(0xFFFFEB3B)  // Kuning
-                        "sudah baca" -> Color(0xFF81C784)  // Hijau
+                        "belum baca" -> Color(0xFFE57373)
+                        "sedang baca" -> Color(0xFFFFEB3B)
+                        "sudah baca" -> Color(0xFF81C784)
                         else -> Color.Gray
                     }
                 )
@@ -79,7 +118,7 @@ fun BukuDialog(
         },
         dismissButton = {
             Button(
-                onClick = onDeleteClick,
+                onClick = { showConfirmDialog = true }, // Menampilkan konfirmasi penghapusan
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Hapus")
@@ -102,7 +141,7 @@ fun PreviewBukuDialog() {
             status = "sedang baca",
             coverUrl = "",
             createdAt = "2023-10-01",
-            updatedAt = "2023-10-01"
+            updatedAt = "2023-10-01",
         ),
         onDismissRequest = {},
         onEditClick = {},
