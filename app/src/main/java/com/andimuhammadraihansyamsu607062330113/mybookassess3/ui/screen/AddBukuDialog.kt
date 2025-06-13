@@ -5,15 +5,30 @@ import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
-import com.andimuhammadraihansyamsu607062330113.mybookassess3.R
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -23,7 +38,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import java.io.File
+import com.andimuhammadraihansyamsu607062330113.mybookassess3.R
+import com.canhub.cropper.CropImageContract
+import com.canhub.cropper.CropImageContractOptions
+import com.canhub.cropper.CropImageOptions
 
 @Composable
 fun AddBukuDialog(
@@ -36,25 +54,15 @@ fun AddBukuDialog(
     var description by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("") }
     var selectedImage by remember { mutableStateOf<Bitmap?>(null) }
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
     var errorMessage by remember { mutableStateOf("") }
 
     val context = LocalContext.current
-    val tempFile = remember { File(context.cacheDir, "temp_image.jpg") }
-    imageUri = Uri.fromFile(tempFile)
 
-    val pickImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            selectedImage = getBitmapFromUri(context.contentResolver, it)
-        }
-    }
-
-    val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) {
-            val tempUri = imageUri
-            if (tempUri != null) {
-                selectedImage = getBitmapFromUri(context.contentResolver, tempUri)
-            }
+    val launcher = rememberLauncherForActivityResult(CropImageContract()) { result ->
+        if (result.isSuccessful) {
+            selectedImage = getBitmapFromUri(context.contentResolver, result.uriContent!!)
+        } else {
+            errorMessage = "Gagal memproses gambar"
         }
     }
 
@@ -129,7 +137,14 @@ fun AddBukuDialog(
                 ) {
                     Button(
                         onClick = {
-                            pickImageLauncher.launch("image/*")
+                            val options = CropImageContractOptions(
+                                null, CropImageOptions(
+                                    imageSourceIncludeGallery = true,
+                                    imageSourceIncludeCamera = false,
+                                    fixAspectRatio = true
+                                )
+                            )
+                            launcher.launch(options)
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -149,7 +164,14 @@ fun AddBukuDialog(
 
                     Button(
                         onClick = {
-                            takePictureLauncher.launch(imageUri!!)
+                            val options = CropImageContractOptions(
+                                null, CropImageOptions(
+                                    imageSourceIncludeGallery = false,
+                                    imageSourceIncludeCamera = true,
+                                    fixAspectRatio = true
+                                )
+                            )
+                            launcher.launch(options)
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -167,8 +189,6 @@ fun AddBukuDialog(
                         }
                     }
                 }
-
-
 
                 selectedImage?.let {
                     AsyncImage(
@@ -202,7 +222,8 @@ fun AddBukuDialog(
                         onSave(judul, penulis, tahunTerbit, description, status, selectedImage)
                         onDismissRequest()
                     } else {
-                        errorMessage = context.getString(R.string.pesan_error)                    }
+                        errorMessage = context.getString(R.string.pesan_error)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
