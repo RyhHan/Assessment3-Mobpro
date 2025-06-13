@@ -184,7 +184,7 @@ fun MainScreen() {
                             viewModel.retrieveData(user.email)
                             selectedBuku = Buku(id, user.email,judul, penulis, tahunTerbit.toInt(), description, status, buku.coverUrl, "", "")
                         }
-
+                        showDialog = false
                         showEditBukuDialog = false
                     }
                 )
