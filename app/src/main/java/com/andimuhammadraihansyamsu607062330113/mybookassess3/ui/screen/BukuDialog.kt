@@ -50,7 +50,6 @@ fun BukuDialog(
             confirmButton = {
                 Button(
                     onClick = {
-                        // Menghapus buku setelah konfirmasi
                         onDeleteClick()
                         showConfirmDialog = false
                     }
@@ -103,9 +102,9 @@ fun BukuDialog(
                 Text(
                     text = "Status: ${buku.status}",
                     color = when (buku.status) {
-                        "belum baca" -> Color(0xFFE57373)
-                        "sedang baca" -> Color(0xFFFFEB3B)
-                        "sudah baca" -> Color(0xFF81C784)
+                        "Belum Baca" -> Color(0xFFE57373)
+                        "Sedang Baca" -> Color(0xFFFFEB3B)
+                        "Sudah Baca" -> Color(0xFF81C784)
                         else -> Color.Gray
                     }
                 )
