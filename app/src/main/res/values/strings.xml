@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MyBookAssess3</string>
+    <string name="app_name">MyBook</string>
     <string name="gambar">Gambar %1$s</string>
     <string name="error">Gagal memuat data.. Koneksi error.</string>
     <string name="try_again">Coba lagi</string>
@@ -15,7 +15,6 @@
     <string name="simpan">Simpan</string>
     <string name="hapus">Hapus</string>
 
-    <!-- AddBukuDialog Strings -->
     <string name="tambah_buku_baru">Tambah Buku Baru</string>
     <string name="judul_buku">Judul Buku</string>
     <string name="penulis">Penulis</string>
