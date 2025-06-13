@@ -112,11 +112,10 @@ class MainViewModel : ViewModel() {
                     coverImage?.toMultipartBody()
                 )
 
-                // Log response for debugging
                 Log.d("UpdateBuku", "Response: $response")
 
                 if (response.message == "Buku updated successfully") {
-                    onComplete()  // Callback to retrieve data
+                    onComplete()
                 } else {
                     errorMessage.value = "Failed to update book"
                 }

@@ -95,7 +95,7 @@ fun EditBukuDialog(
                 ) {
                     Text("Status Buku:")
 
-                    listOf("belum baca", "sedang baca", "sudah baca").forEach { stat ->
+                    listOf("Belum Baca", "Sedang Baca", "Sudah Baca").forEach { stat ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {

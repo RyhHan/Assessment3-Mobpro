@@ -39,7 +39,6 @@ fun BukuDialog(
     var showConfirmDialog by remember { mutableStateOf(false) }
 
     if (showConfirmDialog) {
-        // Menampilkan dialog konfirmasi untuk menghapus buku
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
             title = {
